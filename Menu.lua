@@ -1,17 +1,64 @@
 require("MenuList")
 require("Fonts")
 
+local toggleStates = {
+    ram = false,
+    cpu = false,
+    gpu = false,
+    kblayout = false,
+    time = false,
+}
+
+local function loadToggleStates()
+    for name, _ in pairs(toggleStates) do
+        local filePath = string.format("assets/cfg/%s.txt", name)
+        local f = io.open(filePath, "r")
+        if f then
+            local status = f:read("*l")
+            f:close()
+            toggleStates[name] = (status == "on")
+        else
+            toggleStates[name] = false
+        end
+    end
+end
+loadToggleStates()
+
+local function toggleOption(name)
+    toggleStates[name] = not toggleStates[name]
+    if toggleStates[name] then
+        wr(name, "on")
+    else
+        rm(name)
+    end
+    print(string.format("%s display %s", name:upper(), toggleStates[name] and "enabled" or "disabled"))
+end
 
 local menuItems = {
     { name = "Display info", action = function() dofile("./display.lua") end },
     {
         name = "Settings",
         submenu = {
-            { name = "Toggle RAM display", action = function() print("Option 1") end },
-            { name = "Toggle CPU display", action = function() print("Option 2") end },
-            { name = "Toggle GPU display", action = function() print("Option 3") end },
-            { name = "Toggle kb-layout display", action = function() print("Option 4") end },
-            { name = "Toggle time display", action = function() print("Option 5") end },
+            {
+                name = function() return "Toggle RAM display [" .. (toggleStates.ram and "ON" or "OFF") .. "]" end,
+                action = function() toggleOption("ram") end
+            },
+            {
+                name = function() return "Toggle CPU display [" .. (toggleStates.cpu and "ON" or "OFF") .. "]" end,
+                action = function() toggleOption("cpu") end
+            },
+            {
+                name = function() return "Toggle GPU display [" .. (toggleStates.gpu and "ON" or "OFF") .. "]" end,
+                action = function() toggleOption("gpu") end
+            },
+            {
+                name = function() return "Toggle kb-layout display [" .. (toggleStates.kblayout and "ON" or "OFF") .. "]" end,
+                action = function() toggleOption("kblayout") end
+            },
+            {
+                name = function() return "Toggle time display [" .. (toggleStates.time and "ON" or "OFF") .. "]" end,
+                action = function() toggleOption("time") end
+            },
             { name = "Back" }
         }
     },
@@ -96,7 +143,13 @@ local function drawMenu(x, y, width)
             entry.alpha = entry.alpha + (targetAlpha - entry.alpha) * 0.2
 
             local col = Color.new(255, 255, 255, math.floor(entry.alpha))
-            intraFont.print(x + offsetX, baseY + (j - 1) * 22, item.name, col, FontRegular, entry.size)
+
+            local text = item.name
+            if type(text) == "function" then
+                text = text()
+            end
+
+            intraFont.print(x + offsetX, baseY + (j - 1) * 22, text, col, FontRegular, entry.size)
         end
     end
 end
