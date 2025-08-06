@@ -9,6 +9,8 @@ local toggleStates = {
     time = false,
 }
 
+local imageStates = {}
+
 local function loadToggleStates()
     for name, _ in pairs(toggleStates) do
         local filePath = string.format("assets/cfg/%s.txt", name)
@@ -22,7 +24,27 @@ local function loadToggleStates()
         end
     end
 end
-loadToggleStates()
+
+local function loadImageStates()
+    imageStates = {}
+    local files = System.listDir("assets/imgs")
+    for _, file in ipairs(files) do
+        local filename = file.name
+        local name = filename:match("(.+)%..+$")
+        if name then
+            local cfg = "assets/cfg/" .. name .. "_img.txt"
+            local visible = false
+            local f = io.open(cfg, "r")
+            if f then
+                local status = f:read("*l")
+                visible = (status == "on")
+                f:close()
+            end
+            imageStates[name] = visible
+        end
+    end
+end
+
 
 local function toggleOption(name)
     toggleStates[name] = not toggleStates[name]
@@ -31,8 +53,31 @@ local function toggleOption(name)
     else
         rm(name)
     end
-    print(string.format("%s display %s", name:upper(), toggleStates[name] and "enabled" or "disabled"))
 end
+
+local function toggleImage(name)
+    local cfg = "assets/cfg/" .. name .. "_img.txt"
+    local visible = not imageStates[name]
+    imageStates[name] = visible
+
+    local x, y, scale = 20, 20, 1.0
+    local f = io.open(cfg, "r")
+    if f then
+        f:read("*l")
+        x = tonumber(f:read("*l")) or 20
+        y = tonumber(f:read("*l")) or 20
+        scale = tonumber(f:read("*l")) or 1.0
+        f:close()
+    end
+
+    local fw = io.open(cfg, "w")
+    fw:write((visible and "on" or "off") .. "\n")
+    fw:write(x .. "\n" .. y .. "\n" .. scale .. "\n")
+    fw:close()
+end
+
+loadToggleStates()
+loadImageStates()
 
 local menuItems = {
     { name = "Display info", action = function() dofile("./display.lua") end },
@@ -40,24 +85,44 @@ local menuItems = {
         name = "Settings",
         submenu = {
             {
-                name = function() return "Toggle RAM display [" .. (toggleStates.ram and "ON" or "OFF") .. "]" end,
+                name = function() return "RAM display [" .. (toggleStates.ram and "ON" or "OFF") .. "]" end,
                 action = function() toggleOption("ram") end
             },
             {
-                name = function() return "Toggle CPU display [" .. (toggleStates.cpu and "ON" or "OFF") .. "]" end,
+                name = function() return "CPU display [" .. (toggleStates.cpu and "ON" or "OFF") .. "]" end,
                 action = function() toggleOption("cpu") end
             },
             {
-                name = function() return "Toggle GPU display [" .. (toggleStates.gpu and "ON" or "OFF") .. "]" end,
+                name = function() return "GPU display [" .. (toggleStates.gpu and "ON" or "OFF") .. "]" end,
                 action = function() toggleOption("gpu") end
             },
             {
-                name = function() return "Toggle kb-layout display [" .. (toggleStates.kblayout and "ON" or "OFF") .. "]" end,
+                name = function() return "Kb-layout display [" .. (toggleStates.kblayout and "ON" or "OFF") .. "]" end,
                 action = function() toggleOption("kblayout") end
             },
             {
-                name = function() return "Toggle time display [" .. (toggleStates.time and "ON" or "OFF") .. "]" end,
+                name = function() return "Time display [" .. (toggleStates.time and "ON" or "OFF") .. "]" end,
                 action = function() toggleOption("time") end
+            },
+            {
+                name = "Images",
+                submenu = (function()
+                    local list = {}
+                    for name, _ in pairs(imageStates) do
+                        table.insert(list, {
+                            rawName = name,
+                            name = function()
+                                return string.format("%s [%s]", name, imageStates[name] and "ON" or "OFF")
+                            end,
+                            action = function()
+                                toggleImage(name)
+                            end
+                        })
+                    end
+                    
+                    table.insert(list, { name = "Back" })
+                    return list
+                end)()
             },
             { name = "Back" }
         }
@@ -102,6 +167,46 @@ local function processInput(dt)
             top.direction = -1
         else
             os.exit()
+        end
+    end
+
+    if buttons.pressed(buttons.triangle) then
+        local selected = list[idx]
+        if type(selected.name) == "function" then
+            local nameStr = selected.name()
+            for stat, _ in pairs(toggleStates) do
+                if nameStr:lower():find(stat) then
+                    _CURRENT_EDIT_COLOR = stat
+                    dofile("color_editor.lua")
+                    return
+                end
+            end
+        end
+    end
+
+    if buttons.pressed(buttons.square) then
+        local selected = list[idx]
+        if type(selected.name) == "function" then
+            local nameStr = selected.name()
+            for stat, _ in pairs(toggleStates) do
+                if nameStr:lower():find(stat) then
+                    _CURRENT_EDIT_POS = stat
+                    dofile("size_pos_editor.lua")
+                    return
+                end
+            end
+            for imgName, _ in pairs(imageStates) do
+                if nameStr:lower():find(imgName) then
+                    _CURRENT_EDIT_POS = imgName .. "_img"
+                    dofile("size_pos_editor.lua")
+                    return
+                end
+            end
+            if selected.rawName and imageStates[selected.rawName] ~= nil then
+                _CURRENT_EDIT_POS = selected.rawName .. "_img"
+                dofile("size_pos_editor.lua")
+                return
+            end            
         end
     end
 end
