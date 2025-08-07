@@ -7,7 +7,7 @@ local cfgFile = string.format("%s%s.txt", cfgPath, stat)
 
 local visible = "off"
 local x, y = 20, 20
-local scale = 1.0
+local scaleX, scaleY = 1.0, 1.0
 
 local displayName = stat:gsub("_img$", ""):upper()
 local rawName = stat:lower():gsub("_img$", "")
@@ -17,7 +17,8 @@ if f then
     visible = f:read("*l") or "off"
     x = tonumber(f:read("*l")) or 20
     y = tonumber(f:read("*l")) or 20
-    scale = tonumber(f:read("*l")) or 1.0
+    scaleX = tonumber(f:read("*l")) or 1.0
+    scaleY = tonumber(f:read("*l")) or 1.0
     f:close()
 end
 
@@ -46,16 +47,17 @@ while not done do
     intraFont.print(20, 40, "Visible: " .. visible, White, FontRegular, 1)
     intraFont.print(20, 60, "X: " .. x, White, FontRegular, 1)
     intraFont.print(20, 80, "Y: " .. y, White, FontRegular, 1)
-    intraFont.print(20, 100, "Scale: " .. string.format("%.2f", scale), White, FontRegular, 1)
-    intraFont.print(20, 130, "D-pad: Move | L/R: Scale | X/O: Save & Exit |\n\nTriangle: Toggle Visible", White, FontRegular, 0.85)
+    intraFont.print(20, 100, "Scale X: " .. string.format("%.2f", scaleX), White, FontRegular, 1)
+    intraFont.print(20, 120, "Scale Y: " .. string.format("%.2f", scaleY), White, FontRegular, 1)
+    intraFont.print(20, 150, "D-pad: Move | L/R: Scale X | L+R: Scale YX/O: Save & Exit |\n\nTriangle: Toggle Visible", White, FontRegular, 0.85)
 
     if visible == "on" then
         if hasImage then
-            local w = math.floor(Image.W(img) * scale)
-            local h = math.floor(Image.H(img) * scale)
+            local w = math.floor(Image.W(img) * scaleX)
+            local h = math.floor(Image.H(img) * scaleY)
             Image.draw(img, x, y, w, h)
         else
-            intraFont.print(x, y, displayName, Red, FontRegular, scale)
+            intraFont.print(x, y, displayName, Red, FontRegular, (scaleX + scaleY) / 2)
         end
     end
 
@@ -66,8 +68,16 @@ while not done do
     if buttons.held(buttons.up) then y = y - step end
     if buttons.held(buttons.down) then y = y + step end
 
-    if buttons.held(buttons.l) then scale = math.max(0.1, scale - scaleStep) end
-    if buttons.held(buttons.r) then scale = scale + scaleStep end
+    local l = buttons.held(buttons.l)
+    local r = buttons.held(buttons.r)
+
+    if l and r then
+        if buttons.held(buttons.left) then scaleY = math.max(0.1, scaleY - scaleStep) end
+        if buttons.held(buttons.right) then scaleY = scaleY + scaleStep end
+    else
+        if l then scaleX = math.max(0.1, scaleX - scaleStep) end
+        if r then scaleX = scaleX + scaleStep end
+    end
 
     if buttons.pressed(buttons.triangle) then
         visible = (visible == "on") and "off" or "on"
@@ -79,7 +89,8 @@ while not done do
             fw:write(visible .. "\n")
             fw:write(x .. "\n")
             fw:write(y .. "\n")
-            fw:write(string.format("%.2f\n", scale))
+            fw:write(string.format("%.2f\n", scaleX))
+            fw:write(string.format("%.2f\n", scaleY))
             fw:close()
         end
         done = true

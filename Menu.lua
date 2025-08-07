@@ -232,7 +232,8 @@ local function drawMenu(x, y, width)
         local offsetX = (i - #menuStack) * width * (1 - prog) * dir
         local alpha = math.floor(255 * prog)
 
-        screen.filledRect(x + offsetX - 10, 0, width + 20, 272, Color.new(0, 0, 0, math.floor(alpha * 0.8)))
+        screen.filledRect(x + offsetX - 10, 0, 272, 480, Color.new(0, 0, 0, math.floor(alpha * 0.8)))
+        
 
         for j, item in ipairs(menu.list) do
             local isSelected = (j == menu.currentIdx)
