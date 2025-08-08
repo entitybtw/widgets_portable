@@ -40,15 +40,14 @@ local scaleStep = 0.05
 while not done do
     buttons.read()
     screen.clear()
-
     local header = hasImage and "Editing image: " or "Editing object: "
     intraFont.print(20, 10, header .. displayName, White, FontRegular, 1)
 
     intraFont.print(20, 40, "Visible: " .. visible, White, FontRegular, 1)
     intraFont.print(20, 60, "X: " .. x, White, FontRegular, 1)
     intraFont.print(20, 80, "Y: " .. y, White, FontRegular, 1)
-    intraFont.print(20, 100, "Scale X: " .. string.format("%.2f", scaleX), White, FontRegular, 1)
-    intraFont.print(20, 120, "Scale Y: " .. string.format("%.2f", scaleY), White, FontRegular, 1)
+    local avgscale = (scaleX + scaleY) / 2
+    intraFont.print(20, 100, "Scale: " .. string.format("%.2f", avgscale), White, FontRegular, 1)
     intraFont.print(20, 150, "D-pad: Move | L/R: Scale | X/O: Save & Exit |\n\nTriangle: Toggle Visible", White, FontRegular, 0.85)
 
     if visible == "on" then
