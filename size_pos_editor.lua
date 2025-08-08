@@ -49,7 +49,7 @@ while not done do
     intraFont.print(20, 80, "Y: " .. y, White, FontRegular, 1)
     intraFont.print(20, 100, "Scale X: " .. string.format("%.2f", scaleX), White, FontRegular, 1)
     intraFont.print(20, 120, "Scale Y: " .. string.format("%.2f", scaleY), White, FontRegular, 1)
-    intraFont.print(20, 150, "D-pad: Move | L/R: Scale X | L+R: Scale YX/O: Save & Exit |\n\nTriangle: Toggle Visible", White, FontRegular, 0.85)
+    intraFont.print(20, 150, "D-pad: Move | L/R: Scale | X/O: Save & Exit |\n\nTriangle: Toggle Visible", White, FontRegular, 0.85)
 
     if visible == "on" then
         if hasImage then
