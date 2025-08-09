@@ -1,6 +1,6 @@
 local cfgPath = "assets/cfg/"
 local statusPath = "assets/statuses/"
-local imageCache = {} 
+local imageCache = {}
 
 local function isEnabled(name)
     local f = io.open(cfgPath .. name .. ".txt", "r")
@@ -27,21 +27,43 @@ local positions = {}
 local colors = {}
 
 local function loadPositions()
+    local step = 14
     for i, name in ipairs(statusNames) do
         local f = io.open(cfgPath .. name .. ".txt", "r")
         if f then
-            visible = f:read("*l") or "off"
-            local x = tonumber(f:read("*l")) or 20
-            local y = tonumber(f:read("*l")) or 20
-            local scaleX = tonumber(f:read("*l")) or 1
-            local scaleY = tonumber(f:read("*l")) or 1
-            positions[name] = { x = x, y = y, scale = math.max(scaleX, scaleY) }
+            local enabled = f:read("*l") or "off"
+            local x = tonumber(f:read("*l"))
+            local y = tonumber(f:read("*l"))
+            local scaleX = tonumber(f:read("*l"))
+            local scaleY = tonumber(f:read("*l"))
             f:close()
+
+            if not x then x = 20 end
+            if not y then y = 20 + (i - 1) * step end
+            if not scaleX then scaleX = 1 end
+            if not scaleY then scaleY = 1 end
+
+            positions[name] = { x = x, y = y, scale = math.max(scaleX, scaleY) }
         else
-            positions[name] = { x = 20, y = 20 + (i - 1) * 20, scale = 1 }
-        end     
+            positions[name] = { x = 20, y = 20 + (i - 1) * step, scale = 1 }
+        end
+    end
+
+    local f = io.open(cfgPath .. "kbflag_img.txt", "r")
+    if f then
+        f:read("*l")
+        local x = tonumber(f:read("*l")) or 20
+        local y = tonumber(f:read("*l")) or (20 + #statusNames * step)
+        local scaleX = tonumber(f:read("*l")) or 1
+        local scaleY = tonumber(f:read("*l")) or 1
+        positions["kbflag"] = { x = x, y = y, scale = math.max(scaleX, scaleY) }
+        f:close()
+    else
+        positions["kbflag"] = { x = 20, y = 20 + #statusNames * step, scale = 1 }
     end
 end
+
+
 
 local function loadColors()
     for _, name in ipairs(statusNames) do
@@ -60,12 +82,28 @@ end
 
 local function drawStatus()
     for _, name in ipairs(statusNames) do
-        if isEnabled(name) then
+        if name == "kblayout" and isEnabled("kbflag") then
+            local layoutCode = readStatus("kblayout")
+            local pos = positions["kbflag"]
+            local scale = pos.scale or 1
+            local flagPath = string.format("assets/flags/%s.png", layoutCode)
+            if fileExists(flagPath) then
+                local img = imageCache[flagPath]
+                if not img then
+                    img = Image.load(flagPath)
+                    if img then imageCache[flagPath] = img end
+                end
+                if img then
+                    local w = math.floor(Image.W(img) * scale)
+                    local h = math.floor(Image.H(img) * scale)
+                    Image.draw(img, pos.x, pos.y, w, h)
+                end
+            end
+        elseif isEnabled(name) then
             local pos = positions[name]
             local col = colors[name]
             local color = Color.new(col[1], col[2], col[3], 255)
             local scale = pos.scale or 1
-
             if name == "time" then
                 local t = System.getTime()
                 local timeStr = string.format("Time: %02d:%02d:%02d %02d/%02d/%04d", t.hour, t.minutes, t.seconds, t.day, t.month, t.year)
@@ -93,15 +131,11 @@ local function drawImages()
                 local scaleX = tonumber(f:read("*l")) or 1.0
                 local scaleY = tonumber(f:read("*l")) or 1.0
                 f:close()
-
                 if visible == "on" then
                     if not imageCache[filename] then
                         local img = Image.load("assets/imgs/" .. filename)
-                        if img then
-                            imageCache[filename] = img
-                        end
+                        if img then imageCache[filename] = img end
                     end
-
                     local img = imageCache[filename]
                     if img then
                         local w = math.floor(Image.W(img) * scaleX)
@@ -113,21 +147,22 @@ local function drawImages()
         end
     end
 end
-    loadPositions()
-    loadColors()
 
-    while true do
-        buttons.read()
-        if buttons.pressed(buttons.circle) then
-            for _, img in pairs(imageCache) do
-                Image.unload(img)
-            end
-            imageCache = {}
-            break
-        end        
-        screen.clear()
-        drawStatus()
-        drawImages()
-        screen.flip()
-        LUA.sleep(100)
+loadPositions()
+loadColors()
+
+while true do
+    buttons.read()
+    if buttons.pressed(buttons.circle) then
+        for _, img in pairs(imageCache) do
+            Image.unload(img)
+        end
+        imageCache = {}
+        break
     end
+    screen.clear()
+    drawStatus()
+    drawImages()
+    screen.flip()
+    LUA.sleep(100)
+end

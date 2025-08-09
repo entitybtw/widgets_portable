@@ -22,7 +22,18 @@ if f then
     f:close()
 end
 
-local imgFile = imgPath .. rawName .. ".png"
+local imgFile
+if rawName == "kbflag" then
+    local ff = io.open("assets/statuses/kblayout.txt", "r")
+    local code = ff and ff:read("*l") or "us"
+    if ff then ff:close() end
+    imgFile = string.format("assets/flags/%s.png", code)
+else
+    imgFile = imgPath .. rawName .. ".png"
+end
+if rawName == "kbflag" and visible == "off" then
+    visible = "on"
+end
 local img = nil
 local hasImage = false
 
@@ -42,14 +53,12 @@ while not done do
     screen.clear()
     local header = hasImage and "Editing image: " or "Editing object: "
     intraFont.print(20, 10, header .. displayName, White, FontRegular, 1)
-
     intraFont.print(20, 40, "Visible: " .. visible, White, FontRegular, 1)
     intraFont.print(20, 60, "X: " .. x, White, FontRegular, 1)
     intraFont.print(20, 80, "Y: " .. y, White, FontRegular, 1)
     local avgscale = (scaleX + scaleY) / 2
     intraFont.print(20, 100, "Scale: " .. string.format("%.2f", avgscale), White, FontRegular, 1)
     intraFont.print(20, 150, "D-pad: Move | L/R: Scale | X/O: Save & Exit |\n\nTriangle: Toggle Visible", White, FontRegular, 0.85)
-
     if visible == "on" then
         if hasImage then
             local w = math.floor(Image.W(img) * scaleX)
@@ -59,17 +68,13 @@ while not done do
             intraFont.print(x, y, displayName, Red, FontRegular, (scaleX + scaleY) / 2)
         end
     end
-
     screen.flip()
-
     if buttons.held(buttons.left) then x = x - step end
     if buttons.held(buttons.right) then x = x + step end
     if buttons.held(buttons.up) then y = y - step end
     if buttons.held(buttons.down) then y = y + step end
-
     local l = buttons.held(buttons.l)
     local r = buttons.held(buttons.r)
-
     if l and r then
         if buttons.held(buttons.left) then scaleY = math.max(0.1, scaleY - scaleStep) end
         if buttons.held(buttons.right) then scaleY = scaleY + scaleStep end
@@ -77,11 +82,9 @@ while not done do
         if l then scaleX = math.max(0.1, scaleX - scaleStep) end
         if r then scaleX = scaleX + scaleStep end
     end
-
     if buttons.pressed(buttons.triangle) then
         visible = (visible == "on") and "off" or "on"
     end
-
     if buttons.pressed(buttons.cross) or buttons.pressed(buttons.circle) then
         local fw = io.open(cfgFile, "w")
         if fw then
@@ -94,6 +97,5 @@ while not done do
         end
         done = true
     end
-
     LUA.sleep(20)
 end
