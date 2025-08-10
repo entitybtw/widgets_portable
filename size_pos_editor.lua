@@ -5,8 +5,8 @@ local cfgPath = "assets/cfg/"
 local imgPath = "assets/imgs/"
 local cfgFile = string.format("%s%s.txt", cfgPath, stat)
 
-local visible = "off"
-local x, y = 20, 20
+local visible = "on"
+local x, y = 20, 10
 local scaleX, scaleY = 1.0, 1.0
 
 local displayName = stat:gsub("_img$", ""):upper()
@@ -30,9 +30,6 @@ if rawName == "kbflag" then
     imgFile = string.format("assets/flags/%s.png", code)
 else
     imgFile = imgPath .. rawName .. ".png"
-end
-if rawName == "kbflag" and visible == "off" then
-    visible = "on"
 end
 local img = nil
 local hasImage = false
@@ -61,11 +58,11 @@ while not done do
     intraFont.print(20, 150, "D-pad: Move | L/R: Scale | X/O: Save & Exit |\n\nTriangle: Toggle Visible", White, FontRegular, 0.85)
     if visible == "on" then
         if hasImage then
-            local w = math.floor(Image.W(img) * scaleX)
-            local h = math.floor(Image.H(img) * scaleY)
-            Image.draw(img, x, y, w, h)
+            local w = math.floor(Image.W(img) * avgscale)
+            local h = math.floor(Image.H(img) * avgscale)
+            Image.draw(img, x, y, w, h)            
         else
-            intraFont.print(x, y, displayName, Red, FontRegular, (scaleX + scaleY) / 2)
+            intraFont.print(x, y, displayName, Red, FontRegular, avgscale)
         end
     end
     screen.flip()
