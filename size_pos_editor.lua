@@ -58,8 +58,8 @@ while not done do
     intraFont.print(20, 150, "D-pad: Move | L/R: Scale | X/O: Save & Exit |\n\nTriangle: Toggle Visible", White, FontRegular, 0.85)
     if visible == "on" then
         if hasImage then
-            local w = math.floor(Image.W(img) * avgscale * 1.22)
-            local h = math.floor(Image.H(img) * avgscale * 1.22)
+            local w = math.floor(Image.W(img) * scaleX)
+            local h = math.floor(Image.H(img) * scaleY)
             Image.draw(img, x, y, w, h)            
         else
             intraFont.print(x, y, displayName, Red, FontRegular, avgscale)

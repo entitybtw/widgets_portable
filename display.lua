@@ -43,7 +43,7 @@ local function loadPositions()
             if not scaleX then scaleX = 1 end
             if not scaleY then scaleY = 1 end
 
-            positions[name] = { x = x, y = y, scale = math.max(scaleX, scaleY) }
+            positions[name] = { x = x, y = y, scale = (scaleX + scaleY) / 2 }
         else
             positions[name] = { x = 20, y = 20 + (i - 1) * step, scale = 1 }
         end
