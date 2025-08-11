@@ -48,12 +48,12 @@ end
 
 local function toggleOption(name)
     toggleStates[name] = not toggleStates[name]
-    local namef = io.open("assets/cfg/" .. name, "w")
+    local namefw = io.open("assets/cfg/" .. name .. ".txt", "w")
     if toggleStates[name] then
-        kbf:write("on")
-        kbf:close()
+        namefw:write("on")
+        namefw:close()
     else
-        System.removeFile("assets/cfg/" .. name)
+        System.removeFile("assets/cfg/" .. name .. ".txt")
     end
 end
 
