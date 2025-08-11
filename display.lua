@@ -83,6 +83,13 @@ end
 local function drawStatus()
     for _, name in ipairs(statusNames) do
         if name == "kblayout" and isEnabled("kbflag") then
+            local kbfr = io.open("assets/statuses/kblayout.txt", "r")
+            if kbfr == nil then 
+            local kbfw = io.open("assets/statuses/kblayout.txt", "w")
+            kbfw:write("us")
+            kbfw:close()
+            kbfr:close()
+            end
             local layoutCode = readStatus("kblayout")
             local pos = positions["kbflag"]
             local scale = pos.scale or 1
