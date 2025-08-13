@@ -111,7 +111,46 @@ local function drawStatus()
             local scale = pos.scale or 1
             if name == "time" then
                 local t = System.getTime()
-                local timeStr = string.format("Time: %02d:%02d:%02d %02d/%02d/%04d", t.hour, t.minutes, t.seconds, t.day, t.month, t.year)
+            
+                t.hour = tonumber(t.hour) or 0
+                t.minutes = tonumber(t.minutes) or 0
+                t.seconds = tonumber(t.seconds) or 0
+
+                local timeFormats = {
+                    [1] = "%02d:%02d",           -- HH:MM (24h)
+                    [2] = "%02d:%02d:%02d",      -- HH:MM:SS (24h)
+                    [3] = "%02d:%02d %s",        -- HH:MM AM/PM (12h)
+                    [4] = "%02d:%02d:%02d %s"    -- HH:MM:SS AM/PM (12h)
+                }
+            
+                local formatIndex = 1
+                local fmtFile = io.open(cfgPath .. "time_format.txt", "r")
+                if fmtFile then
+                    local num = tonumber(fmtFile:read("*l"))
+                    fmtFile:close()
+                    if type(num) == "number" and timeFormats[num] then
+                        formatIndex = num
+                    end
+                end
+            
+                local timeStr
+                if formatIndex <= 2 then
+                    if formatIndex == 1 then
+                        timeStr = string.format(timeFormats[1], t.hour, t.minutes)
+                    else
+                        timeStr = string.format(timeFormats[2], t.hour, t.minutes, t.seconds)
+                    end
+                else
+                    local hour12 = t.hour % 12
+                    if hour12 == 0 then hour12 = 12 end
+                    local ampm = (t.hour < 12) and "AM" or "PM"
+                    if formatIndex == 3 then
+                        timeStr = string.format(timeFormats[3], hour12, t.minutes, ampm)
+                    else
+                        timeStr = string.format(timeFormats[4], hour12, t.minutes, t.seconds, ampm)
+                    end
+                end
+            
                 intraFont.print(pos.x, pos.y, timeStr, color, FontRegular, scale)
             else
                 local st = readStatus(name)

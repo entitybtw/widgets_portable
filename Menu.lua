@@ -174,7 +174,7 @@ local function processInput(dt)
         if type(selected.name) == "function" then
             local nameStr = selected.name()
             for stat, _ in pairs(toggleStates) do
-                if nameStr:lower():find(stat) then
+                if nameStr:lower():gsub("-", ""):find(stat) then
                     _CURRENT_EDIT_COLOR = stat
                     dofile("color_editor.lua")
                     return
@@ -182,26 +182,35 @@ local function processInput(dt)
             end
         end
     end
+    if buttons.pressed(buttons.select) then
+        local selected = list[idx]
+        if type(selected.name) == "function" then
+            local nameStr = selected.name()
+            if nameStr:lower():gsub("-", ""):find("time") then
+                dofile("time_editor.lua")
+                return
+            end
+        end
+    end    
     if buttons.pressed(buttons.square) then
         local selected = list[idx]
         if type(selected.name) == "function" then
             local nameStr = selected.name()
             for stat, _ in pairs(toggleStates) do
-                if nameStr:lower():find(stat) then
-                    _CURRENT_EDIT_POS = stat
-                    dofile("size_pos_editor.lua")
-                    return
-                end
-                if stat == "kblayout" then
-                    if toggleStates.kbflag then
-                        _CURRENT_EDIT_POS = "kbflag_img"
+                if nameStr:lower():gsub("-", ""):find(stat) then
+                    if stat == "kblayout" then
+                        if toggleStates.kbflag then
+                            _CURRENT_EDIT_POS = "kbflag_img"
+                        else
+                            _CURRENT_EDIT_POS = "kblayout"
+                        end
                     else
-                        _CURRENT_EDIT_POS = "kblayout"
+                        _CURRENT_EDIT_POS = stat
                     end
                     dofile("size_pos_editor.lua")
                     return
-                end                
-            end
+                end
+            end                     
             for imgName, _ in pairs(imageStates) do
                 if nameStr:lower():find(imgName) then
                     _CURRENT_EDIT_POS = imgName .. "_img"

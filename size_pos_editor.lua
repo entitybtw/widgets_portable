@@ -2,12 +2,13 @@ local stat = _CURRENT_EDIT_POS
 if not stat then error("No stat provided") end
 
 local cfgPath = "assets/cfg/"
+local statusPath = "assets/statuses/"
 local imgPath = "assets/imgs/"
 local cfgFile = string.format("%s%s.txt", cfgPath, stat)
 
 local visible = "on"
-local x, y = 20, 10
-local scaleX, scaleY = 1.0, 1.0
+local step = 14
+local x, y, scaleX, scaleY = 20, 20, 1.0, 1.0
 
 local displayName = stat:gsub("_img$", ""):upper()
 local rawName = stat:lower():gsub("_img$", "")
@@ -20,20 +21,42 @@ if f then
     scaleX = tonumber(f:read("*l")) or 1.0
     scaleY = tonumber(f:read("*l")) or 1.0
     f:close()
+else
+    local statusNames = { "cpu", "ram", "gpu", "kblayout", "time" }
+    for i, name in ipairs(statusNames) do
+        if rawName == name then
+            y = 20 + (i - 1) * step
+            break
+        end
+    end
+    if rawName == "kbflag" then
+        y = 20 + #statusNames * step
+    end
+end
+
+local colorPath = string.format("%s%s_color.txt", cfgPath, rawName)
+local textColor = Color.new(255, 255, 255, 255)
+local cf = io.open(colorPath, "r")
+if cf then
+    local r = tonumber(cf:read("*n")) or 255
+    local g = tonumber(cf:read("*n")) or 255
+    local b = tonumber(cf:read("*n")) or 255
+    textColor = Color.new(r, g, b, 255)
+    cf:close()
 end
 
 local imgFile
 if rawName == "kbflag" then
-    local ff = io.open("assets/statuses/kblayout.txt", "r")
+    local ff = io.open(statusPath .. "kblayout.txt", "r")
     local code = ff and ff:read("*l") or "us"
     if ff then ff:close() end
     imgFile = string.format("assets/flags/%s.png", code)
 else
     imgFile = imgPath .. rawName .. ".png"
 end
+
 local img = nil
 local hasImage = false
-
 local check = io.open(imgFile, "rb")
 if check then
     check:close()
@@ -42,7 +65,7 @@ if check then
 end
 
 local done = false
-local step = 4
+local moveStep = 4
 local scaleStep = 0.05
 
 while not done do
@@ -56,20 +79,24 @@ while not done do
     local avgscale = (scaleX + scaleY) / 2
     intraFont.print(20, 100, "Scale: " .. string.format("%.2f", avgscale), White, FontRegular, 1)
     intraFont.print(20, 150, "D-pad: Move | L/R: Scale | X/O: Save & Exit |\n\nTriangle: Toggle Visible", White, FontRegular, 0.85)
+    
     if visible == "on" then
         if hasImage then
-            local w = math.floor(Image.W(img) * scaleX)
-            local h = math.floor(Image.H(img) * scaleY)
+            local renderScale = (rawName == "kbflag" or stat:match("_img$")) and math.max(scaleX, scaleY) or avgscale
+            local w = math.floor(Image.W(img) * renderScale)
+            local h = math.floor(Image.H(img) * renderScale)
             Image.draw(img, x, y, w, h)            
         else
-            intraFont.print(x, y, displayName, Red, FontRegular, avgscale)
+            intraFont.print(x, y, displayName, textColor, FontRegular, avgscale)
         end
     end
+    
     screen.flip()
-    if buttons.held(buttons.left) then x = x - step end
-    if buttons.held(buttons.right) then x = x + step end
-    if buttons.held(buttons.up) then y = y - step end
-    if buttons.held(buttons.down) then y = y + step end
+    if buttons.held(buttons.left) then x = x - moveStep end
+    if buttons.held(buttons.right) then x = x + moveStep end
+    if buttons.held(buttons.up) then y = y - moveStep end
+    if buttons.held(buttons.down) then y = y + moveStep end
+    
     local l = buttons.held(buttons.l)
     local r = buttons.held(buttons.r)
     if l and r then
@@ -79,9 +106,11 @@ while not done do
         if l then scaleX = math.max(0.1, scaleX - scaleStep) end
         if r then scaleX = scaleX + scaleStep end
     end
+    
     if buttons.pressed(buttons.triangle) then
         visible = (visible == "on") and "off" or "on"
     end
+    
     if buttons.pressed(buttons.cross) or buttons.pressed(buttons.circle) then
         local fw = io.open(cfgFile, "w")
         if fw then
