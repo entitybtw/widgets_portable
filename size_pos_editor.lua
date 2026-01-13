@@ -81,15 +81,15 @@ while not done do
     intraFont.print(20, 150, "D-pad: Move | L/R: Scale | X/O: Save & Exit |\n\nTriangle: Toggle Visible", White, FontRegular, 0.85)
     
     if visible == "on" then
-        if hasImage then
-            local renderScale = (rawName == "kbflag" or stat:match("_img$")) and math.max(scaleX, scaleY) or avgscale
-            local w = math.floor(Image.W(img) * renderScale)
-            local h = math.floor(Image.H(img) * renderScale)
-            Image.draw(img, x, y, w, h)            
-        else
-            intraFont.print(x, y, displayName, textColor, FontRegular, avgscale)
-        end
+    if hasImage then
+        local w = math.max(1, math.floor(Image.W(img) * scaleX))
+        local h = math.max(1, math.floor(Image.H(img) * scaleY))
+        Image.draw(img, x, y, w, h)
+    else
+        local avgscale = (scaleX + scaleY) / 2
+        intraFont.print(x, y, displayName, textColor, FontRegular, avgscale)
     end
+end
     
     screen.flip()
     if buttons.held(buttons.left) then x = x - moveStep end
