@@ -67,27 +67,34 @@ end
 local done = false
 local moveStep = 4
 local scaleStep = 0.05
+local preciseMode = false
+local editingXScale = true
 
 while not done do
     buttons.read()
     screen.clear()
     local header = hasImage and "Editing image: " or "Editing object: "
-    intraFont.print(20, 10, header .. displayName, White, FontRegular, 1)
-    intraFont.print(20, 40, "Visible: " .. visible, White, FontRegular, 1)
-    intraFont.print(20, 60, "X: " .. x, White, FontRegular, 1)
-    intraFont.print(20, 80, "Y: " .. y, White, FontRegular, 1)
-    local avgscale = (scaleX + scaleY) / 2
-    intraFont.print(20, 100, "Scale: " .. string.format("%.2f", avgscale), White, FontRegular, 1)
-    intraFont.print(20, 150, "D-pad: Move | L/R: Scale | X/O: Save & Exit |\n\nTriangle: Toggle Visible", White, FontRegular, 0.85)
+    intraFont.print(20, 10, header .. displayName, Color.new(255, 255, 255, 255), FontRegular, 1)
+    intraFont.print(20, 40, "Visible: " .. visible, Color.new(255, 255, 255, 255), FontRegular, 1)
+    intraFont.print(20, 60, "X: " .. x, Color.new(255, 255, 255, 255), FontRegular, 1)
+    intraFont.print(20, 80, "Y: " .. y, Color.new(255, 255, 255, 255), FontRegular, 1)
+    intraFont.print(20, 100, "Scale X: " .. string.format("%.2f", scaleX), Color.new(255, 255, 255, 255), FontRegular, 1)
+    intraFont.print(20, 120, "Scale Y: " .. string.format("%.2f", scaleY), Color.new(255, 255, 255, 255), FontRegular, 1)
+    intraFont.print(20, 150, "D-pad: Move | L/R: Scale | X: Precise mode (" .. (preciseMode and "ON" or "OFF") .. ")\n\nTriangle: Visible | Circle: Save & Exit", Color.new(255, 255, 255, 255), FontRegular, 0.85)
+    
+    if preciseMode then
+        intraFont.print(20, 140, "Editing: " .. (editingXScale and "Scale X" or "Scale Y"), Color.new(255, 255, 0, 255), FontRegular, 1)
+    end
     
     if visible == "on" then
         if hasImage then
-            local renderScale = (rawName == "kbflag" or stat:match("_img$")) and math.max(scaleX, scaleY) or avgscale
-            local w = math.floor(Image.W(img) * renderScale)
-            local h = math.floor(Image.H(img) * renderScale)
+            local renderScaleX = (rawName == "kbflag" or stat:match("_img$")) and scaleX or scaleX
+            local renderScaleY = (rawName == "kbflag" or stat:match("_img$")) and scaleY or scaleY
+            local w = math.floor(Image.W(img) * renderScaleX)
+            local h = math.floor(Image.H(img) * renderScaleY)
             Image.draw(img, x, y, w, h)            
         else
-            intraFont.print(x, y, displayName, textColor, FontRegular, avgscale)
+            intraFont.print(x, y, displayName, textColor, FontRegular, (scaleX + scaleY) / 2)
         end
     end
     
@@ -97,21 +104,41 @@ while not done do
     if buttons.held(buttons.up) then y = y - moveStep end
     if buttons.held(buttons.down) then y = y + moveStep end
     
-    local l = buttons.held(buttons.l)
-    local r = buttons.held(buttons.r)
-    if l and r then
-        if buttons.held(buttons.left) then scaleY = math.max(0.1, scaleY - scaleStep) end
-        if buttons.held(buttons.right) then scaleY = scaleY + scaleStep end
+    if preciseMode then
+        if editingXScale then
+            if buttons.held(buttons.l) then scaleX = math.max(0.1, scaleX - scaleStep) end
+            if buttons.held(buttons.r) then scaleX = scaleX + scaleStep end
+        else
+            if buttons.held(buttons.l) then scaleY = math.max(0.1, scaleY - scaleStep) end
+            if buttons.held(buttons.r) then scaleY = scaleY + scaleStep end
+        end
+        
+        if buttons.pressed(buttons.up) and buttons.held(buttons.cross) then
+            editingXScale = true
+        end
+        if buttons.pressed(buttons.down) and buttons.held(buttons.cross) then
+            editingXScale = false
+        end
     else
-        if l then scaleX = math.max(0.1, scaleX - scaleStep) end
-        if r then scaleX = scaleX + scaleStep end
+        if buttons.held(buttons.l) then
+            scaleX = math.max(0.1, scaleX - scaleStep)
+            scaleY = math.max(0.1, scaleY - scaleStep)
+        end
+        if buttons.held(buttons.r) then
+            scaleX = scaleX + scaleStep
+            scaleY = scaleY + scaleStep
+        end
     end
     
     if buttons.pressed(buttons.triangle) then
         visible = (visible == "on") and "off" or "on"
     end
     
-    if buttons.pressed(buttons.cross) or buttons.pressed(buttons.circle) then
+    if buttons.pressed(buttons.cross) and not buttons.held(buttons.up) and not buttons.held(buttons.down) then
+        preciseMode = not preciseMode
+    end
+    
+    if buttons.pressed(buttons.circle) then
         local fw = io.open(cfgFile, "w")
         if fw then
             fw:write(visible .. "\n")
